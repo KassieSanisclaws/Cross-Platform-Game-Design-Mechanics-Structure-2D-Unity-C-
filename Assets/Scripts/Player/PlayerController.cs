@@ -1,7 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Windows;
+
+
 
 [RequireComponent(typeof(Rigidbody2D), typeof(SpriteRenderer), typeof(Animator))]
 public class Player_Controller : MonoBehaviour
@@ -23,7 +24,16 @@ public class Player_Controller : MonoBehaviour
     [SerializeField] Transform GroundCheck;
     [SerializeField] float groundCheckRadius;
     [SerializeField] LayerMask isGroundLayer;
-   
+
+    // Projectile Prefab and Speed
+    [SerializeField] GameObject projectilePrefab;
+    [SerializeField] Transform launchPoint;
+    [SerializeField] float launchSpeed;
+
+    // Life_Bar to check gamne or respawn, life count system  
+    public int life_Bar;
+    //
+    public int plyr_src;
 
 
 
@@ -62,6 +72,7 @@ public class Player_Controller : MonoBehaviour
         MovementInput();
         JumpInput();
         AttackMeele_Strike();
+        AttackLaunch_Strike();
 
         
     }
@@ -98,19 +109,52 @@ public class Player_Controller : MonoBehaviour
     {
          if (UnityEngine.Input.GetButtonDown("Fire1") && isGrounded)
            {
-            anim.SetTrigger("Meele_Strike");
-           }
+            anim.SetTrigger("Attack");
+
+            // Get current animation clip information
+            AnimatorClipInfo[] clipInfo = anim.GetCurrentAnimatorClipInfo(0);
+
+
+            // Check if the current animation clip is named "Fire"
+            if (clipInfo.Length > 0 && clipInfo[0].clip.name == "Fire")
+            {
+                rb.velocity = Vector2.zero; // Stop the player's movement
+            }
+            else
+            {
+              // Continue normal movement and trigger the animation
+                float xInput = UnityEngine.Input.GetAxis("Horizontal");
+                rb.velocity = new Vector2(xInput * speed, rb.velocity.y);
+                if (Input.GetButtonDown("Fire1"))
+                {
+                    anim.SetTrigger("Fire");
+                }
+             }
+         }
     }
 
     // Attack Lauch_Strike
     void AttackLaunch_Strike()
     {
-        // Initialize the prefab Energy_Strike
-        GameObject projectile = Instantiate(projectilePrefab, launchPoint.position, Quaternion.identity);
+        if (Input.GetButtonDown("Fire2") && isGrounded)
 
-        // Set Energy_Strike velocity based on player direction: TODO
-        Vector2 direction = sr.flipX ? Vector2.left : Vector2.right;
-        projectile.GetComponent<Rigidbody2D>().velocity = direction * projectileSpeed;
+        {
+            // Based on Animation clip and logi the below code not animatorClip.
+            //if (projectilePrefab != null && launchPoint != null)
+            //{
+                // Initialize the prefab Energy_Strike
+             //   GameObject energy_Strike = Instantiate(projectilePrefab, launchPoint.position, Quaternion.identity);
+
+                // Set Energy_Strike velocity based on player direction: TODO
+              //  Vector2 direction = sr.flipX ? Vector2.left : Vector2.right;
+              //  energy_Strike.GetComponent<Rigidbody2D>().velocity = direction * launchSpeed;
+            //}
+           
+        } else
+            {
+                Debug.LogError("Projectile prefab or launch point is not assigned.");
+            }
+
     }
 
     // Ground Check
@@ -127,6 +171,13 @@ public class Player_Controller : MonoBehaviour
         if (collision.gameObject.CompareTag("GroundCheck"))
         {
             isGrounded = true;
+        }
+        else if (collision.gameObject.CompareTag("Diamond"))
+        {
+            anim.SetTrigger("Diamond_Destroyed");
+
+            // Destroy the diamond when player collides with it
+            Destroy(collision.gameObject);
         }
     }
 
